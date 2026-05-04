@@ -1,0 +1,8 @@
+w,s,h,Type,Filename,Speed,T,Date,uw,us,uh,machine
+mm,mm,mm,,,mm/min,celsius,,mm,mm,mm,
+236,400,6,natural_fresh,230426_sample1_instron,10.2,18,230426,5,0.5,0.5,instron
+240,400,7,natural_fresh,230426_sample2_instron,30,18,230426,5,0.5,0.5,instron
+274,400,13,natural_fresh,230426_sample3_instron,10.2,18,230426,5,0.5,0.5,instron
+310,400,7,natural_fresh,230426_sample4_instron,10.2,18,230426,5,0.5,0.5,instron
+165,190,6,natural_fresh,230426_1_siwwi,10.2,10,230426,5,0.5,0.5,siwwi
+100,190,6,natural_fresh,230426_2_siwwi,10.2,13,230426,5,0.5,0.5,siwwi
