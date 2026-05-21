@@ -4,6 +4,8 @@
 * Raw calibration files (`.csv`) include the sensor number (taped on probes) and its acquisition mode (LOW = 50Hz sampling rate, HIGH = 100Hz).
 * Acquisition modes include "low" (50Hz sampling frequency) and "high" (100Hz). eg, `sensor2_low.csv` corresponds to sensor number 2 in low mode.
 * The data columns within the raw files represent: tension (U), tension uncertainty (dU), distance from water surface to sensor (l), and distance uncertainty (dl). meters are used as distances units, and Volts for voltage.
+* .pdf : calibration output plot.
+* .csv : calibration table output results.
 
 ##  Experimental setup
 Measurements were taken by recording the distance between the water surface and the upper part of the transparent piece holding the probe, as it was easier to measure.
