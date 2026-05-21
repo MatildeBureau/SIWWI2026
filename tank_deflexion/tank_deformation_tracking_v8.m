@@ -2,18 +2,17 @@
 %  SIWWI DEFORMATION TRACKING SCRIPT
 %  =========================================================================
 %  DESCRIPTION:
-%    This script performs 2D image-based deformation (displacement) tracking
-%    on a series of grayscale .TIF photographs taken during a laboratory
-%    experiment (SIWWI — Snow/Ice/Water/Wave/Ice, or similar physical model).
+%    This script performs 2D displacement tracking
+%    on a series of grayscale .TIF photographs of one fixed position in the tank.
 %
-%    The core technique is Normalised Cross-Correlation (NCC): a small
+%    Method: Normalised Cross-Correlation (NCC): a small
 %    reference "template" patch is selected from the first image, and the
 %    script searches for the best matching location of that patch in every
 %    subsequent image. The shift in position between frames is converted
 %    from pixels to millimetres using a manual calibration step.
 %
-%    Displacements are tracked separately for images taken with laboratory
-%    lights ON vs OFF (to account for different lighting conditions).
+%    Displacements are tracked separately for images taken with lab
+%    lights on vs off.
 %    Results can be saved as a displacement plot (.png / .pdf) and as a
 %    annotated CSV file containing displacements + experimental metadata.
 %
@@ -28,7 +27,6 @@
 %
 %  REQUIRED MATLAB TOOLBOXES:
 %    - Image Processing Toolbox  (normxcorr2, imshow, imcrop, rgb2gray)
-%    - (No additional toolboxes strictly required beyond base MATLAB)
 %
 %  INPUT FILES:
 %    - A folder of .TIF or .tif images named DSC_XXXX.tif
@@ -38,7 +36,7 @@
 %        Lines 3+: one row per image with fields including Name,
 %                  Temperature, WaterHeight, LabLights, etc.
 %
-%  OUTPUT FILES (saved in a timestamped subfolder inside the image folder):
+%  OUTPUT FILES :
 %    - session_metadata.txt  : calibration and session info
 %    - displacement_plot.png / .pdf  : displacement vs image number
 %    - Tank_deflexion_results.csv    : displacements + metadata per image
@@ -47,9 +45,6 @@
 %  DATES   : 07/04/26 – 08/04/26
 %  =========================================================================
 
-%% Housekeeping
-% Clear the command window, all workspace variables, and close all figures
-% to start with a clean environment.
 clc; clear; close all; 
 
 %% User-controlled save flags
@@ -65,52 +60,45 @@ save_results = true;   % Save displacement data to CSV?
 %  =========================================================================
 disp('--- Step 1: Select Files ---');
 
-% --- Select image folder ---
-% Opens a GUI dialog so the user can navigate to the folder containing
-% all the .TIF experiment images.
+% Select image folder 
+
 folderPath = uigetdir(pwd, 'Select the folder containing your .TIF images');
 if isequal(folderPath, 0); error('No folder selected.'); end  % User cancelled → abort
 
-% --- Select metadata CSV ---
-% Opens a file browser filtered to .csv files.
-% The metadata CSV must have variable names on line 1, units on line 2,
-% and one data row per image from line 3 onwards.
+%  Select metadata CSV 
 [metaName, metaPath] = uigetfile('*.csv', 'Select the metadata CSV');
 if isequal(metaName, 0); error('No metadata file selected.'); end 
 fullMetaPath = fullfile(metaPath, metaName); % Build the full file path
 
-% --- Parse CSV header and units lines manually ---
-% We read the first two lines of the CSV ourselves because readtable would
-% treat both as data. We extract variable names (line 1) and units (line 2).
+%  Parse CSV header and units lines manually 
+
 fid = fopen(fullMetaPath);
 headerLine = fgetl(fid);   % Line 1: column names
 unitsLine  = fgetl(fid);   % Line 2: physical units
 fclose(fid);
 
 % Convert the comma-separated header into valid MATLAB variable names
-% (e.g. spaces → underscores, no leading digits, etc.)
 varNames = matlab.lang.makeValidName(strtrim(split(headerLine, ',')));
 units    = strtrim(split(unitsLine, ','));  % Keep units as plain strings
 
-% --- Read the actual data (from line 3 onwards) ---
+% Read the actual data (from line 3 onwards) 
 opts = detectImportOptions(fullMetaPath);
 opts.DataLines = [3 Inf];        % Skip the header and units lines
-opts.VariableNames = varNames;   % Use our cleaned variable names
+opts.VariableNames = varNames;   
 metadata = readtable(fullMetaPath, opts); 
 
-% --- Store units in a struct for easy lookup later ---
-% Each field name matches a metadata column name; its value is the unit string.
+% Store units
 metadata_units = struct();
 for i = 1:length(varNames)
     metadata_units.(varNames{i}) = units{i};
 end
 
 %% =========================================================================
-%  STEP 2 — Select Which Images to Process
+%  STEP 2 — Select images to process
 %  =========================================================================
 disp('--- Step 2: Select Images ---');
 
-% Ask the user whether to process ALL images automatically or pick specific ones.
+
 answerMode = questdlg('Process all images automatically or select specific images?', ...
     'Mode Selection', 'All', 'Selection', 'All');
 if isempty(answerMode); error('Selection cancelled.'); end  % Dialog closed → abort
@@ -119,7 +107,7 @@ process_all = strcmp(answerMode, 'All');  % Boolean: true if user chose 'All'
 if process_all
     % --- Automatic mode: parse image numbers from metadata 'Name' field ---
     % The Name field typically looks like "DSC_0042" or "DSC__0042".
-    % We normalise double underscores to single, then extract the 4-digit number.
+
     cleanMetaNames = strrep(string(metadata.Name), '__', '_');
     parsedNums = zeros(height(metadata), 1);
     for k = 1:height(metadata)
@@ -131,7 +119,7 @@ if process_all
 
     % --- Deduplicate: skip rows where Temperature, WaterHeight, AND LabLights
     %     are identical to the previous row (i.e. no experimental change occurred).
-    %     This avoids processing redundant frames captured under the same conditions.
+    %     avoids processing redundant frames captured under the same conditions.
     keepIdx = true(height(metadata), 1);
     for k = 2:height(metadata)
         if metadata.Temperature(k) == metadata.Temperature(k-1) && ...
@@ -147,7 +135,7 @@ if process_all
     userInput = {'ALL'};  % Placeholder for later metadata logging
 
 else
-    % --- Manual mode: user types a comma-separated list of image numbers ---
+    %  Manual mode
     prompt = {'Enter image numbers (comma separated, e.g., 1, 3, 11, 48):'};
     userInput = inputdlg(prompt, 'Image Selection', [1 70], {'1,2,3'});
     if isempty(userInput); error('Selection cancelled.'); end
@@ -157,11 +145,10 @@ end
 % Ensure targetNumbers is always a row vector for consistent indexing later
 targetNumbers = targetNumbers(:)'; 
 
-%% =========================================================================
-%  Build File Path List (Memory-Efficient Design)
+% =========================================================================
+%  Build file path List 
 %  =========================================================================
-% Instead of loading all images into memory at once (which would be very
-% large for high-resolution TIFs), we store only the FILE PATHS here.
+% store only file paths and not images to save memory
 % Images are loaded one at a time inside the tracking loop (Step 4).
 numImages = length(targetNumbers);
 imgPaths      = strings(1, numImages);  % Full path to each image file
@@ -171,7 +158,7 @@ is_ON_array   = false(1, numImages);    % true if lab lights were ON for this im
 
 % List all .tif / .TIF files in the selected folder
 files = dir(fullfile(folderPath, '*.tif'));
-files = [files; dir(fullfile(folderPath, '*.TIF'))];  % Case-insensitive union
+files = [files; dir(fullfile(folderPath, '*.TIF'))];  
 fileNames = string({files.name});
 
 % Normalise metadata names for matching against file names
@@ -187,14 +174,14 @@ for i = 1:numImages
     matchIdx = find(contains(fileNames, pattern), 1);
     if isempty(matchIdx)
         warning('Image #%d not found.', targetNumbers(i));
-        continue;  % Skip missing images gracefully
+        continue;  % Skip missing images 
     end
     
     % Store the full path to the found image
     fileName = fileNames(matchIdx);
     imgPaths(i) = fullfile(folderPath, fileName);
     
-    % --- Match image to its metadata row ---
+    %  Match image to its metadata row 
     % Strip the .tif extension and look for a matching 'Name' in the metadata table
     cleanFileName = erase(fileName, [".tif",".TIF"]);
     metaIdx = find(strcmp(cleanMetaNames, cleanFileName), 1);
@@ -202,12 +189,12 @@ for i = 1:numImages
     
     metaIndices(i) = metaIdx;
     
-    % --- Determine lighting status (ON or OFF) ---
-    % This is used later to compute displacements separately per lighting condition.
+    % Determine lighting status (ON or OFF) 
+
     lightStatus = strtrim(lower(string(metadata.LabLights(metaIdx))));
     is_ON_array(i) = contains(lightStatus, 'on');
     
-    % --- Build a human-readable metadata summary string for this image ---
+
     % Concatenates all metadata fields (except Name/File) with their values and units.
     metaStr = "";
     for v = 1:length(varNames)
@@ -223,11 +210,11 @@ for i = 1:numImages
             metaStr = metaStr + string(vName) + ": " + valStr + " " + unitStr + " | ";
         end
     end
-    % Trim the trailing " | " separator from the end of the string
+
     allMetaStrings(i) = extractBefore(metaStr, strlength(metaStr)-2); 
 end
 
-% --- Remove entries for images that were not found on disk ---
+%  Remove entries for images that were not found on disk 
 validMask = (imgPaths ~= "");
 imgPaths       = imgPaths(validMask);
 metaIndices    = metaIndices(validMask);
@@ -239,13 +226,12 @@ numImages      = length(imgPaths);
 if numImages == 0, error('No valid images found.'); end
 
 %% =========================================================================
-%  STEP 3 — Pixel-to-Millimetre Calibration
+%  STEP 3 — Pixel-to-mm calib
 %  =========================================================================
-% To convert tracked displacements from pixels to physical units (mm),
-% we ask the user to click on two points of a known real-world distance
+% ask user to click on two points of a known real-world distance
 % (e.g. a ruler or reference object visible in the image).
 
-% Load only the first image for calibration (no need to load all images here)
+% Load only the first image for calibration 
 tempImg = imread(imgPaths(1));
 if size(tempImg,3) == 3, tempImg = rgb2gray(tempImg); end  % Convert to grayscale if RGB
 
@@ -255,24 +241,24 @@ zoom on; pause;   % Allow user to zoom in for precision
 zoom off; 
 [x_cal, y_cal] = ginput(2);  % User clicks exactly 2 points
 
-% Compute the Euclidean pixel distance between the two clicked points
+
 pixelDist = sqrt(diff(x_cal)^2 + diff(y_cal)^2); 
 
 % Ask user for the real-world distance corresponding to those two points (in cm)
 realDist = str2double(inputdlg('Known distance (cm):','Scale',[1 50],{'10'}));
 
-% Compute the scale factor: how many cm does one pixel represent?
+% Compute the scale factor
 cm_per_pixel = realDist / pixelDist;
 
-close;  % Close calibration figure
+close;  
 
 %% =========================================================================
-%  STEP 4 — Select Template (Feature to Track)
+%  STEP 4 — Select template (Feature to Track)
 %  =========================================================================
-% The user draws a rectangle around a distinctive feature in the first image
+% user draws a rectangle around a distinctive feature in the first image
 % (e.g. a marker, edge, or texture pattern). This patch becomes the
 % "template" that will be searched for in all subsequent images.
-disp('--- Step 3: Tracking reference ---');
+disp('---  Tracking reference ---');
 
 figure('Name', 'Template Selection');
 imshow(tempImg);
@@ -280,7 +266,7 @@ title('Zoom > Enter > Draw rectangle > Enter');
 zoom on; pause;   % Allow user to zoom in for precise selection
 zoom off; 
 
-roi = drawrectangle;  % Interactive rectangle drawing tool
+roi = drawrectangle;  
 pause;                % Wait for user to confirm selection (press Enter)
 
 pos = roi.Position;   % Get rectangle position [x, y, width, height]
@@ -290,26 +276,25 @@ close;
 clear tempImg;  % Free memory — we no longer need the first image loaded as a variable
 
 %% =========================================================================
-%  STEP 5 — Cross-Correlation Tracking
+%  STEP 5 — Cross-Correlation tracking
 %  =========================================================================
-% For each image, we use normalised cross-correlation (normxcorr2) to find
+% For each image, use normalised cross-correlation (normxcorr2) to find
 % the location in the image that best matches the template patch.
 % Sub-pixel refinement can improve accuracy beyond integer-pixel resolution.
-disp('--- Step 4: Tracking Feature ---');
+disp('---  Tracking Feature ---');
 
 % --- Sub-pixel enhancement method selection ---
 % After the integer-pixel peak is found in the correlation map, sub-pixel
-% refinement estimates the "true" peak location between pixels:
+% refinement can be used:
 %   - None: raw integer location only
 %   - Parabolic fit: fits a parabola through the peak and its neighbours
-%   - Gaussian fit: fits a Gaussian curve (better for bell-shaped peaks)
+%   - Gaussian fit: fits a Gaussian curve 
 subOptions = {'None (Integer Only)', 'Parabolic Fit', 'Gaussian Fit '};
 subChoice = listdlg('PromptString', 'Select Sub-pixel Enhancement:', ...
                    'SelectionMode', 'single', 'ListString', subOptions, 'InitialValue', 2);
 if isempty(subChoice); subChoice = 1; end  % Default to integer-only if cancelled
 
-% --- Progress bar ---
-% Used instead of per-image plots to save memory and speed up processing.
+%  Progress bar 
 hWait = waitbar(0, 'Analysing Images...');
 
 % Pre-allocate arrays for tracked X and Y centre positions (in pixels)
@@ -320,11 +305,11 @@ for i = 1:numImages
     fprintf('Analysing Image %d/%d... ', i, numImages);
     waitbar(i/numImages, hWait, sprintf('Analysing Image %d of %d', i, numImages));
     
-    % --- Load current image from disk (one at a time to save memory) ---
+    %  Load current image from disk 
     currentImg = imread(imgPaths(i));
     if size(currentImg,3) == 3, currentImg = rgb2gray(currentImg); end  % Ensure grayscale
     
-    % --- Normalised cross-correlation ---
+    %  Normalised cross-correlation
     % normxcorr2 slides the template over the image and computes a
     % normalised correlation coefficient at every position.
     % The output 'c' has size: (imageHeight + templateHeight - 1) × (imageWidth + templateWidth - 1)
@@ -334,16 +319,16 @@ for i = 1:numImages
     [max_c, imax] = max(c(:));                  % max_c = peak value, imax = linear index
     [ypeak, xpeak] = ind2sub(size(c), imax);    % Convert to 2D (row, col) coordinates
     
-    % --- Sub-pixel refinement ---
+    % Sub-pixel refinement 
     % Estimate fractional pixel offsets (dx, dy) from the integer peak location
     dx = 0; dy = 0;  % Default: no sub-pixel correction
     
     % Only attempt sub-pixel fitting if the peak is away from the correlation map border
-    % (we need at least one neighbour on each side)
+    % (need at least one neighbour on each side)
     if ypeak > 1 && ypeak < size(c,1) && xpeak > 1 && xpeak < size(c,2)
         if subChoice == 2  % --- Parabolic fit ---
             % Fit a 1D parabola through the peak and its immediate neighbours
-            % in both X and Y directions. The fractional offset is the parabola vertex.
+            % in both X and Y directions. fractional offset is the parabola vertex.
             denomY = 2 * (c(ypeak-1, xpeak) + c(ypeak+1, xpeak) - 2*max_c);
             denomX = 2 * (c(ypeak, xpeak-1) + c(ypeak, xpeak+1) - 2*max_c);
             
@@ -352,8 +337,7 @@ for i = 1:numImages
             
         elseif subChoice == 3  % --- Gaussian fit ---
             % Fit a 1D Gaussian by working in log-space (where a Gaussian becomes a parabola).
-            % The log transform amplifies differences near the peak for better accuracy.
-            % A small epsilon (1e-6) prevents log(0) errors.
+            % small epsilon (1e-6) prevents log(0) errors.
             v0   = log(max(1e-6, max_c));
             vy_m = log(max(1e-6, c(ypeak-1, xpeak))); vy_p = log(max(1e-6, c(ypeak+1, xpeak)));
             vx_m = log(max(1e-6, c(ypeak, xpeak-1))); vx_p = log(max(1e-6, c(ypeak, xpeak+1)));
@@ -366,9 +350,9 @@ for i = 1:numImages
         end
     end
     
-    % --- Convert correlation map peak to image coordinates ---
+    %  Convert correlation map peak to image coordinates 
     % normxcorr2 output is larger than the original image by (templateSize - 1).
-    % To get the position of the CENTRE of the template in the image, we subtract
+    % To get the position of the CENTRE of the template in the image,  subtract
     % the template half-size from the peak location (after applying sub-pixel offset).
     yoffSet = (ypeak + dy) - size(template, 1);
     xoffSet = (xpeak + dx) - size(template, 2);
@@ -376,25 +360,25 @@ for i = 1:numImages
     trackX(i) = xoffSet + size(template, 2)/2;  % X centre of matched template
     trackY(i) = yoffSet + size(template, 1)/2;  % Y centre of matched template
     
-    % --- Free memory before next iteration ---
+    %  Free memory before next iteration 
     clear currentImg c; 
     fprintf('Done.\n');
 end
 
-delete(hWait);  % Close the progress bar
+delete(hWait);  
 
 %% =========================================================================
-%  STEP 6 — Compute Displacements
+%  STEP 6 — Compute displacements
 %  =========================================================================
-% Displacement = change in tracked position relative to the FIRST image
-% in each lighting condition group (Lights ON vs Lights OFF).
-% This avoids mixing the two conditions, which may have different
+% Displacement = change in tracked position relative to the first image
+% in each lighting condition group.
+% avoids mixing the two conditions, which may have different
 % baseline positions due to image brightness differences.
-disp('--- Step 5: Calculating Displacements ---');
+disp('---  Calculating Displacements ---');
 
-% --- Define Resolution Error based on Tracking Method ---
+% --- Define resolution error based on tracking method ---
 % If sub-pixel fitting was used, error is ~0.1 px ; typical error used 
-% in sub-pixel corr algo (Digital I;age Correlation).
+% in sub-pixel corr algo (Digital Image Correlation).
 % If integer-only was used, error is 0.5 px: method only sees a pixel
 % center so 'true' position could be anywhere within half a radius
 if subChoice == 1
@@ -478,8 +462,7 @@ if ~exist(resultsDir, 'dir')
 end
 
 % --- Write session metadata to a plain-text file ---
-% This logs calibration, method, image selection, and source folder
-% for reproducibility and record-keeping.
+% This logs calibration, method, image selection, and source folder.
 infoFile = fullfile(resultsDir, 'session_metadata.txt');
 fid_info = fopen(infoFile, 'w');
 if fid_info ~= -1
