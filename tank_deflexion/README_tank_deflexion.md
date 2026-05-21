@@ -22,6 +22,12 @@ My steps were:
 
 ---
 
+## Contents:
+* METADATA_tank_deflexion.csv : metadata for tests. Contains temperature, light case, water height for each video. Input for main script.
+* Tank_deflexion_result.csv : output computed displacements
+* displacement_plot.pdf : output displacement plot (horiz/vert displacement vs image nb) obtained with gaussian subpx method
+* tank_deformation_tracking_v8.m : main script for deformation tracking
+
 ## Script Documentation: `tank_deformation_trackking_v8.m`
 This script requires a folder with raw `.tif` images and a `.csv` metadata file to be run. It allows the user to select required images for tracking, set calibration, and select the tracking feature.
 
