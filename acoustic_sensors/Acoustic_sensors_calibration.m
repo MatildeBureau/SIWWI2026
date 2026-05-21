@@ -11,7 +11,7 @@
 %    over the whole sensors set.
 % -------------------------------------------------------------------------
 
-% ---  General  ---
+%  General  
 folder_path = './';            % directory containing the .csv files
 save_fig = true;                % save figure if true
 save_results = true;            % save results if true
@@ -26,7 +26,7 @@ mode_markers = {'o', 's'};
 % fluctuate > estimate uncertainty.
 num_trials = 5000; 
 
-% ---  Plotting & storage initialization ---
+% Plotting & storage initialization
 fig = figure('Name', 'SIWWI Calibration', 'Color', 'w', 'Units', 'pixels', 'Position', [100, 100, 1000, 700]);
 hold on; grid on;
 sensor_colors = lines(num_sensors); 
@@ -35,12 +35,11 @@ master_table = table();
 x_label_str = ''; y_label_str = ''; 
 h_master_lines = gobjects(length(modes), 1); 
 
-% ---  Processing ---
+%  Processing
 for m = 1:length(modes)
     mode_name = modes{m};
     current_marker = mode_markers{m};
     
-    % temporary storage for ensemble calculations
     sensor_slopes = zeros(num_sensors, 1);
     sensor_intercepts = zeros(num_sensors, 1);
     sensor_da_prop = zeros(num_sensors, 1); 
@@ -48,11 +47,11 @@ for m = 1:length(modes)
     all_V = []; all_d = []; 
     
     for s = 1:num_sensors
-        % filename (e.g., sensor1_low.csv)
+      
         filename = fullfile(folder_path, sprintf('sensor%d_%s.csv', s, mode_name));
         if ~isfile(filename), continue; end % Skip if file is missing
         
-        % Axis Labels 
+   
         if isempty(x_label_str)
             fid = fopen(filename, 'r'); 
             h_q = strsplit(fgetl(fid), ','); % Quantities
@@ -137,7 +136,7 @@ for m = 1:length(modes)
     fill([V_fit_range, fliplr(V_fit_range)], [ribbon_top, fliplr(ribbon_bottom)], ...
         [0.9 0.9 0.9], 'FaceAlpha', 0.5, 'EdgeColor', 'none', 'HandleVisibility', 'off');
     
-    % --- Plot  ensemble line ---
+    %  ensemble line ---
     l_style = '-'; if strcmp(mode_name, 'high'), l_style = '--'; end
     h_master_lines(m) = plot(V_fit_range, mode_a * V_fit_range + mode_b, 'Color', [0.1 0.1 0.1], ...
         'LineStyle', l_style, 'LineWidth', 2.5, ...
