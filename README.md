@@ -8,4 +8,5 @@ Folders general description:
 
 *DT_boards*: DT Boards installation for Matlab Data Translation. Used to send wave outputs to the wave maker + collect acoustic sensors data.  for heavy .exe files : see Releases --> .exe files for Data Translation set up - SIWWI2026
 
+*ice_density*: basic script to compute ice density from water displacement measurements. 
 
