@@ -3,53 +3,34 @@
 
 
 
-scripts for processing and analyzing 3-point bending tests performed on ice samples. The system handles raw data extraction, beam theory mechanics, and ensemble statistical averaging.[cite: 9, 10]
-
-
-
-##  Contents
-
-* [Script Documentation](#-script-documentation)
-
-    * [analyse_3pt_bending_test.m](#1-analyse_3pt_bending_testm)
-
-    * [mean_ice_modulus.m](#2-mean_ice_modulusm)
-
-* [Data Metadata and Geometry](#-data-metadata-and-geometry)
-
-
-
-
-
----
-
-
+scripts for processing and analyzing 3-point bending tests performed on ice samples. The system handles raw data extraction, beam theory mechanics, and ensemble statistical averaging.
 
 ##  Script documentation
 
 
 
-### 1. analyse_3pt_bending_test.m
+### 1. three_pt_test_data_reading_v4
 
 **Purpose:**  
 
-Processes raw force, displacement, and time data from a single 3-point bending test to compute flexural strength ($\sigma_f$) and the apparent flexural modulus ($E$).[cite: 10]
+Processes raw force, displacement, and time data from a single 3-point bending test to compute flexural strength ($\sigma_f$) and the elastic modulus ($E$).
 
 
 
 **Methods:**  
 
-*   **Automatic Linear Detection:** Scans user-defined force windows to find the sub-segment with the highest $R^2$ value (most linear) to calculate stiffness ($k$ in N/m).[cite: 10]
+*   **Automatic Linear Detection:** Scans user-defined force windows to find the sub-segment with the highest $R^2$ value (most linear) to calculate stiffness ($k$ in N/m).
 
-*   **Force Zeroing:** Subtracts the first data point from the force signal to correct for tare errors or pre-load.
+*   **Force Zeroing:** Subtracts the first data point from the force signal if above tolerance.
 
-*   **Beam Theory:** Uses standard formulas for simply-supported beams:
+*   **Beam Theory:** 
 
-    *   $\sigma_f = \frac{3FL}{2wh^2}$
+    *   $\sigma_f = \frac{3FL}{2wb^2}$
 
-    *   $E = \frac{kL^3}{4wh^3}$
+    *   $E = \frac{kL^3}{4wb^3}$
+where b = sample thickness, w = width, L = span.
 
-*   **Uncertainty Propagation:** Adds relative errors in quadrature for $\sigma_f$ and $E$, including factors for cubed or squared dimensions.
+*   **Uncertainty Propagation:** Adds relative errors in quadrature for $\sigma_f$ and $E$.
 
 
 
@@ -57,16 +38,16 @@ Processes raw force, displacement, and time data from a single 3-point bending t
 
 *   **Raw Data:** `.txt` (SIWWI format) or `.csv` (Instron format).
 
-*   **Metadata:** `metadata_icetests_230426.csv` providing sample dimensions ($w, h, s$) and measurement uncertainties.
+*   **Metadata:** `metadata_icetests_230426.csv` providing sample dimensions ($w, b, L$) and measurement uncertainties.
 
 
 
 **Tunable Parameters:**  
 
-*   `x_col_choice`: Selects 'Displacement' (crosshead) or 'Extension' (machine internal) as the x-axis.
+*   `x_col_choice`: Selects 'Displacement' or 'Extension'  as the x-axis.
 
 *   `fit_range`: Fraction of peak force (e.g., `[0.7, 1]`) used to identify the linear loading region.
-*   `machine_case`: Set to `'instron'` or `'siwwi'` to toggle the appropriate file parser.
+*   `machine_case`: Set to `'instron'` or `'siwwi'` to use the appropriate file parser.
 
 
 
@@ -86,15 +67,15 @@ Processes raw force, displacement, and time data from a single 3-point bending t
 
 **Purpose:**  
 
-Aggregates results from multiple individual test files to determine the ensemble mean and a representative uncertainty for the Young’s Modulus ($E$) of a sample set.[cite: 9]
+Aggregates results from multiple individual test files to determine the ensemble mean and a representative uncertainty for the Young’s Modulus ($E$) of a sample set.
 
 
 
 **Methods:**  
 
-*   **Data Extraction:** Specifically targets `E_apparent_GPa` and `dE_apparent_GPa` columns using exact string matching.
+*   **Data Extraction:** Specifically targets `E_GPa` and `dE_GPa` columns using exact string matching, or try a different name for older csv versions.
 
-*   **Uncertainty Logic:** Determines the "Retained Uncertainty" by comparing the statistical scatter (standard deviation) of the set against the maximum individual experimental uncertainty ($max \ dE$) found across the files.[cite: 9]
+*   **Uncertainty Logic:** Determines the "Retained Uncertainty" by comparing the statistical scatter (standard deviation) of the set against the maximum individual experimental uncertainty ($max \ dE$) found across the files.
 
 
 
@@ -106,7 +87,7 @@ Aggregates results from multiple individual test files to determine the ensemble
 
 **Outputs:**  
 
-*   Prints the Mean $E$, Stdv $E$, and the final recommended uncertainty to the MATLAB Command Window.
+*   Prints the Mean $E$, Stdv $E$, and the final recommended uncertainty to the console.
 
 
 
@@ -120,13 +101,13 @@ Dimensions and test settings are managed via `metadata_icetests_230426.csv`.
 
 
 
-*   **Required Columns:** `w` (width), `s` (support span), `h` (height), `Type`, `Filename`, `Speed`, `T` (temperature), and uncertainties `uw`, `us`, `uh`.
+*   **Required Columns:** `w` (width), `L` (support span), `b` (height), `Type`, `Filename`, `Speed`, `T` (temperature), and uncertainties `uw`, `uL`, `ub`.
 
 *   **Standard Geometry Ratios (ITTC):** 
 
-    *   Span-to-thickness ($L/h$): Recommended 5–7.
+    *   Span-to-thickness ($L/b$): Recommended 5–7.
 
-    *   Width-to-thickness ($w/h$): Recommended 2–3.
+    *   Width-to-thickness ($w/b$): Recommended 2–3.
 
 
 
