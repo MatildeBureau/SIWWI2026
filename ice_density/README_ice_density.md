@@ -1,6 +1,6 @@
 # Ice density estimation
 
-script for estimating the density of ice samples using water-displacement measurements + uncertainty propagation.
+Script for estimating the density of ice samples using water-displacement measurements + uncertainty propagation.
 
 ---
 
@@ -30,37 +30,29 @@ From these measurements, the script computes:
 
 For each sample:
 
-- \(m_1\): mass of container + water
-- \(m_2\): mass of container + water + floating ice
-- \(m_3\): mass of container + water + submerged ice
+- $m_1$: mass of container + water
+- $m_2$: mass of container + water + floating ice
+- $m_3$: mass of container + water + submerged ice
 
 The true ice mass is:
 
-\[
-m_{ice} = m_2 - m_1
-\]
+$$m_{ice} = m_2 - m_1$$
 
 The displaced water mass is:
 
-\[
-m_{water} = m_3 - m_1
-\]
+$$m_{water} = m_3 - m_1$$
 
 Since:
 
-\[
-m_{water} = \rho_w V_{ice}
-\]
+$$m_{water} = \rho_w V_{ice}$$
 
 the ice density becomes:
 
-\[
-\rho_{ice} = \rho_w \frac{m_{ice}}{m_{water}}
-\]
+$$\rho_{ice} = \rho_w \frac{m_{ice}}{m_{water}}$$
 
 where:
 
-- \(\rho_w\) = density of freshwater (assumed 1000 kg/m³)
+- $\rho_w$ = density of freshwater (assumed 1000 kg/m³)
 
 ---
 
@@ -87,16 +79,14 @@ Steps are the following:
 
 The statistical uncertainty is estimated using the standard error of the mean:
 
-\[
-SEM = \frac{\sigma}{\sqrt{N}}
-\]
+$$SEM = \frac{\sigma}{\sqrt{N}}$$
 
 where:
 
-- \(\sigma\) = sample standard deviation
-- \(N\) = number of ice samples
+- $\sigma$ = sample standard deviation
+- $N$ = number of ice samples
 
-The unbiased \(N-1\) estimator is used.
+The unbiased $N-1$ estimator is used.
 
 ---
 
@@ -104,25 +94,15 @@ The unbiased \(N-1\) estimator is used.
 
 Scale uncertainty is propagated through:
 
-\[
-\rho = \rho_w \frac{m_{ice}}{m_{water}}
-\]
+$$\rho = \rho_w \frac{m_{ice}}{m_{water}}$$
 
 using standard relative uncertainty propagation:
 
-\[
-\frac{u_\rho}{\rho}
-=
-\sqrt{
-\left(\frac{u_m}{m_{ice}}\right)^2
-+
-\left(\frac{u_m}{m_{water}}\right)^2
-}
-\]
+$$\frac{u_\rho}{\rho} = \sqrt{\left(\frac{u_m}{m_{ice}}\right)^2 + \left(\frac{u_m}{m_{water}}\right)^2}$$
 
 where:
 
-- \(u_m\) is derived from the scale resolution
+- $u_m$ is derived from the scale resolution
 
 ---
 
@@ -130,9 +110,7 @@ where:
 
 The total uncertainty combines both error sources :
 
-\[
-u_{tot} = \sqrt{u_{meas}^2 + SEM^2}
-\]
+$$u_{tot} = \sqrt{u_{meas}^2 + SEM^2}$$
 
 ---
 
@@ -147,13 +125,12 @@ The script prints:
 
 Example:
 
-```text
+
 Mean density:             917.25 kg/m3
 Statistical Uncertainty:  +/- 4.12 kg/m3
 Measurement Uncertainty:  +/- 8.45 kg/m3
 Total Uncertainty:        +/- 9.40 kg/m3
 
-
-
 Author : Matilde
-Date : April 2026
+Date : april 2026
+
