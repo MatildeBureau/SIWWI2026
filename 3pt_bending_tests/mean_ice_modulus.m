@@ -10,7 +10,7 @@
 
 %    1. Prompts the user for the number of files to process.
 %    2. Opens a graphical file selector for the user to pick the CSVs.
-%    3. Extracts 'E_apparent_GPa' and 'dE_apparent_GPa' from each file.
+%    3. Extracts 'E_GPa' and 'dE_GPa' from each file.
 %    4. Calculates the mean and standard deviation of the 
 %       sample set.
 %    5. Determines the "Retained Uncertainty" by comparing the 
@@ -19,7 +19,7 @@
 %
 %  OUTPUTS:
 %    Prints Mean E, Stdv E, Max dE, and the final retained uncertainty 
-%    to the MATLAB Command Window.
+%    to the console.
 %
 % =========================================================================
 
@@ -53,39 +53,51 @@ end
 E_list = zeros(actualNum, 1);
 dE_list = zeros(actualNum, 1);
 
+
 %% 2. DATA LOADING
 fprintf('\n--- Loading Data ---\n');
+
 for i = 1:actualNum
     fullPath = fullfile(path, files{i});
     data = readtable(fullPath);
     
-    % USE STRCMP FOR EXACT MATCHING 
-    % This prevents 'E_apparent_GPa' from matching 'dE_apparent_GPa'
-    colE_idx  = find(strcmp(data.Properties.VariableNames, 'E_apparent_GPa'));
-    colDE_idx = find(strcmp(data.Properties.VariableNames, 'dE_apparent_GPa'));
+    varNames = data.Properties.VariableNames;
+    
+    % Young modulus column
+    colE_idx = find(strcmp(varNames, 'E_GPa'));
+    if isempty(colE_idx)
+        colE_idx = find(strcmp(varNames, 'E_apparent_GPa'));
+    end
+    
+    % Uncertainty column
+    colDE_idx = find(strcmp(varNames, 'dE_GPa'));
+    if isempty(colDE_idx)
+        colDE_idx = find(strcmp(varNames, 'dE_apparent_GPa'));
+    end
     
     if isempty(colE_idx) || isempty(colDE_idx)
-        error('Could not find exact columns "E_apparent_GPa" or "dE_apparent_GPa" in file: %s', files{i});
+        error(['Could not find compatible columns "E_GPa" or ' ...
+               '"E_apparent_GPa" (same for dE) in file: %s'], files{i});
     end
     
     % Extract values
-    E_list(i) = data{1, colE_idx};
+    E_list(i)  = data{1, colE_idx};
     dE_list(i) = data{1, colDE_idx};
     
-    fprintf('  [%d/%d] %s: E = %.4f, dE = %.4f\n', i, actualNum, files{i}, E_list(i), dE_list(i));
+    fprintf('  [%d/%d] %s: E = %.4f, dE = %.4f\n', ...
+        i, actualNum, files{i}, E_list(i), dE_list(i));
 end
-
-%% 3. STATISTICAL COMPUTATION
+%% 3. STATS
 mean_E = mean(E_list);
 stdv_E = std(E_list);
 max_dE = max(dE_list);
 
-% Uncertainty Logic:
+% Uncertainty logic:
 % Retain the largest between the scatter of the results (stdv) 
 % and the individual measurement uncertainties (max_dE).
 retained_uncertainty = max(stdv_E, max_dE);
 
-%% 4. DISPLAY RESULTS
+%% 4. RESULTS
 fprintf('\n==============================================\n');
 fprintf('          ICE PROPERTIES             \n');
 fprintf('==============================================\n');
