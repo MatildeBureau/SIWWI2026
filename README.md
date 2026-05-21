@@ -12,3 +12,5 @@ Folders general description:
 
 *ice_density*: basic script to compute ice density from water displacement measurements. 
 
+*acoustic_sensors*: raw calibration data and script for 6 acoustic sensors.
+
