@@ -1,5 +1,5 @@
 %% =========================================================
-%  Wave_paam_tuning.m
+%  Wave_param_tuning.m
 %  Wave input tuning for ice/wave experiments.
 %
 %  PURPOSE:
@@ -16,7 +16,7 @@
 %      - Wave amplitude     a      [m]
 %      - Wave maker voltage V      [V]      (inverted from calibration fit)
 %
-%    Voltage is the set point I entered into the wave maker controlling script.
+%    Voltage is what i sent as an input to the wave maker.
 %    It is derived by inverting the linear calibration fit at the
 %    reference sensor location 
 %  (I used x = 1 m, closest to the wave maker, but it can be tuned in this script):
@@ -61,9 +61,6 @@
 
 clc; clear; close all;
 
-fprintf('========================================================\n');
-fprintf('       Tuning wave parameters for SIWWI exp     \n');
-fprintf('========================================================\n\n');
 
 
 %% =========================================================
@@ -97,7 +94,7 @@ calData = readtable(fullfile(calFilePath, calFileName), ...
 fprintf('Calibration file loaded: %s\n', calFileName);
 fprintf('Columns found: %s\n\n', strjoin(calData.Properties.VariableNames, ' | '));
 
-% --- Define the reference location ---
+
 refLoc_m = 1.0;   % reference sensor x-position [m]
 
 fprintf('Reference sensor location: x = %.1f m\n', refLoc_m);
@@ -239,7 +236,7 @@ end
 ampAxisChoice = questdlg( ...
     'How do you want to specify the wave amplitude axis?', ...
     'Amplitude Input Type', ...
-    'Steepness ka [-]', 'Amplitude a [m]', 'Voltage V [V]');
+    'Steepness ka [-]', 'Amplitude a [m]', 'Voltage V [V]', 'Steepness ka [-]'); 
 
 if isempty(ampAxisChoice)
     error('Amplitude axis type not selected. Aborting.');
@@ -571,7 +568,7 @@ amp_resolution_m = 0.001;   % sensor accuracy floor [m] (UltraLab datasheet)
 V_max_warn       = 10.0;    % warn if required voltage exceeds this [V]
 
 
-nT      = length(T_vec);    % (also set in Section 4 — repeated here for clarity)
+nT      = length(T_vec);   
 nAmp    = length(amp_input);
 nCombos = nT * nAmp;        % total (frequency × amplitude) combinations
 
@@ -588,7 +585,7 @@ out_H_m     = NaN(nCombos, 1);   % wave height (= 2a)     [m]
 out_V_set   = NaN(nCombos, 1);   % wave maker set voltage [V]
 out_flag    = strings(nCombos, 1); % warning flags (empty = OK)
 
-row = 0;   % running row counter
+row = 0;   
 
 for iT = 1:nT
     T      = T_vec(iT);
@@ -746,7 +743,8 @@ fprintf('\n========================================================\n\n');
 saveChoice = questdlg('Save results table as CSV?', ...
     'Save Results', 'Yes', 'No', 'No');
 
-datestr = '280426';
+dateLabel = datetime('now', 'Format', 'ddMMyy');
+datestr = char(dateLabel);   % e.g. '0
 
 if strcmp(saveChoice, 'Yes')
     defaultName = sprintf('Waves_param_%s_%s.csv', waveMode, datestr);

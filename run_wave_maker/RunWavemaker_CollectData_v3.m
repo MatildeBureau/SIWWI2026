@@ -1,12 +1,8 @@
 % =========================================================================
-%  RunWavemaker_CollectData_v2.m
+%  RunWavemaker_CollectData_v3.m
 % =========================================================================
 
 clearvars; close all; clc;
-
-fprintf('=========================================================\n');
-fprintf('       WAVEMAKER & SENSOR DATA ACQUISITION SCRIPT        \n');
-fprintf('=========================================================\n\n');
 
 % =========================================================================
 %  1: HARDWARE RESET
@@ -23,12 +19,14 @@ fprintf('--- 2: User Parameters ---\n');
 
 wave_file = input('Enter .dat file path (sent wave): ', 's');
 
-a_sent   = 8;
-f_sent   = 1;
-mode     = 'HIGH';
-date_str = '280426';
+% input wave parameters (for saved filename only)
+a_sent   = 10.86; % sent voltage (V)
+f_sent   = 0.71; % sent frequency (Hz)
+mode     = 'HIGH'; % acoustic sensors acquisition mode
+date_str = '200526';
 
-save_results = true;
+
+save_results = true; % set to true to save raw sensors time series
 
 fprintf('Test parameters: mode=%s | a=%.4g V | f=%.4g Hz | date=%s\n\n', ...
     mode, a_sent, f_sent, date_str);
@@ -79,6 +77,9 @@ end
 
 % =========================================================================
 % 5: LOAD SENSOR METADATA
+% required columns : 'Sensor' > sensor label, 'Channel' > matching channel
+% nb (Ultralab plugs), 'x_m' > sensor location in the tank, x=0 is set at
+% the wave maker.
 % =========================================================================
 fprintf('--- 5: Loading Sensor Metadata ---\n');
 
@@ -116,7 +117,7 @@ end
 fprintf('\n');
 
 % =========================================================================
-%  6: DAQ CHANNEL SETUP (FIXED)
+%  6: DAQ CHANNEL SETUP 
 % =========================================================================
 fprintf('---  6: DAQ Channel Setup ---\n');
 
@@ -124,17 +125,16 @@ try
     dq      = daq('dt');
     dq.Rate = samplerate;
 
-    % --- Output ---
+ 
     addoutput(dq, DeviceName, '0', 'Voltage');
     fprintf('Output channel 0 added (wave maker drive signal).\n');
 
-    % ===== FIX 1: SORT CHANNELS =====
+ 
     [channelIDs, sortIdx] = sort(channelIDs);
     sensorNumbers = sensorNumbers(sortIdx);
     xLocations    = xLocations(sortIdx);
 
-    % ===== FIX 2: ADD FIRST, CONFIGURE AFTER =====
-    %chList = [];
+ 
     chList = daq.dt.AnalogInputVoltageChannel.empty;
 
     for i = 1:numChannels
@@ -143,7 +143,6 @@ try
             channelIDs(i), sensorNumbers(i), xLocations(i));
     end
 
-    % ===== FIX 3: CONFIGURE AFTER CREATION =====
     for i = 1:numChannels
         chList(i).TerminalConfig = 'SingleEnded';
         chList(i).Range          = [-10 10];

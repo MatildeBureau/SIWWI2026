@@ -1,7 +1,7 @@
 clearvars; close all; clc;
 
 % =========================================================================
-%  Wavemaker / DAQ communication check -- 
+%  Wavemaker / DAQ communication check
 %  
 % Checks that the analog voltage signal sent to the 
 % wavemaker is being correctly transmitted by the Data Translation (DT) 
@@ -14,14 +14,13 @@ clearvars; close all; clc;
 % phase shifts, or amplitude distortions at hardware level).
 % =========================================================================
 
-% --- Load wave file ---
+%  Load wave file 
 wave_file = input('Enter .dat file path: ', 's');
 s = load(wave_file);
 t = s(:,1); % time vector
 y = s(:,2); % voltage/amplitude vector
 
-%  clean format
-%  double precision column vectors for  DAQ interface
+
 t = double(t(:));
 y = double(y(:));
 
@@ -31,9 +30,9 @@ dt = mean(diff(t));
 samplerate = round(1/dt);
 fprintf('Detected samplerate: %.2f Hz\n', samplerate);
 
-% check uniformity ---
+% check uniformity 
 % DAQ requires uniform sampling rate. error 
-% if time vector has irregular steps (prevent hardware glitches).
+% if time vector has irregular steps (prevent hardware glitches)
 if max(abs(diff(t) - dt)) > 1e-6
     error('Time vector is not uniform, fix generation script');
 end

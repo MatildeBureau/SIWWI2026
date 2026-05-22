@@ -10,21 +10,18 @@
 % duration, plots it and saves it using a filename like 
 % mono_wave_DATE_AMPlitude_FREQ_SAMPLINGFREQ_DURation.dat
 
-%
-%  AUTHOR : Matilde
-%  DATE   : 200326
 % =========================================================================
 clear; clc; close all;
 
 % save params
 filepath = 'C:/Users/mbureau/OneDrive - The University of Melbourne/Desktop/SIWWI2026/wavemaker_codes/wave_inputs';
-date_str = '230426'; 
+date_str = '060526'; 
 
 % wave params
 sf = 1000;         % Sampling frequency [Hz]
-ff = 0.83;            % Wave frequency [Hz]
+ff = 1.6667;            % Wave frequency [Hz]
 cv = 1;            % conversion (1 = 'aa' is in Volts)
-aa = 12.5644;         % amplitude (V)
+aa = 10;         % amplitude (V)
 duration = 180;    % signal duration [s] 
 
 
