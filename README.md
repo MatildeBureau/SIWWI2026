@@ -29,4 +29,8 @@ scripts to : tune wave parameters for target inputs, generate wave inputs for ma
 ## wave_maker_calib :
 sample raw datas from 6 acoustic sensors + two side-cameras obtained during open-water tests in the tank. The goal of those test was to obtain the input voltag > actual wave amplitudes conversion for the padle, amd compare cameras and sensors measurements. metadata files for all tests run on this date + example output figures are attached.
 
+## papers:
+Some useful references + documentation and specs.
+
+
 
