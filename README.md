@@ -4,6 +4,8 @@ Scripts used for wave/ice data post-processing -- SIWWI facility -- University o
 
 Don't hesitate to reach out for any question : matildebureau@gmail.com 
 
+all scripts are Matlab ones.
+
 Folders general description:
 
 ## 3pt_bending_tests :
@@ -21,5 +23,7 @@ raw calibration data and script for 6 acoustic sensors.
 ## tank_deflexion :
 script to test if I could monitor tank deflexion due to temperature changes or water filling. We suspected those were the main causes for the floor to the deform and then create leaks.
 
+## run_wave_maker :
+scripts to : tune wave parameters for target inputs, generate wave inputs for main scripts, test if the wave maker runs (its name is Wolfgang - Wolfy btw) correctly, run it and simultaneously acquire and save data from acoustic sensors through the DTbox. + example .csv output containing wave parameters used as inputs on 13/05/26.
 
 
