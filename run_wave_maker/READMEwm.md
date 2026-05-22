@@ -1,6 +1,6 @@
 # Running SIWWI's wave maker through Data Translation + MATLAB
 
-This repository contains MATLAB scripts developed for the SIWWI 2026 experiments. Purpose: tuning of wave parameters, generation of wave signal inputs, hardware verification, and synchronised multi-channel data acquisition using Data Translation (DT) hardware.
+This repository contains matlab scripts for tuning of wave parameters, generation of wave signal inputs, hardware verification, and synchronised data acquisition using Data Translation (DT) hardware.
 
 ---
 
