@@ -63,17 +63,17 @@ where b = sample thickness, w = width, L = span.
 
 
 
-### 2. mean_ice_modulus.m
+### 2. mean_ice_modulus_and_strength.m
 
 **Purpose:**  
 
-Aggregates results from multiple individual test files to determine the ensemble mean and a representative uncertainty for the Young’s Modulus ($E$) of a sample set.
+Aggregates results from multiple individual test files to determine the mean and a representative uncertainty for Young’s Modulus ($E$) and  flexural strength of a sample set.
 
 
 
 **Methods:**  
 
-*   **Data Extraction:** Specifically targets `E_GPa` and `dE_GPa` columns using exact string matching, or try a different name for older csv versions.
+*   **Data Extraction:** Specifically targets `E_GPa` and `dE_GPa` columns using exact string matching, or try a different name for older csv versions. For the flexural strength, 'Sigma_f_kPa' and 'dSigma_f_kPa' columns are extracted from the input csv.
 
 *   **Uncertainty Logic:** Determines the "Retained Uncertainty" by comparing the statistical scatter (standard deviation) of the set against the maximum individual experimental uncertainty ($max \ dE$) found across the files.
 
@@ -85,9 +85,7 @@ Aggregates results from multiple individual test files to determine the ensemble
 
 
 
-**Outputs:**  
 
-*   Prints the Mean $E$, Stdv $E$, and the final recommended uncertainty to the console.
 
 
 
