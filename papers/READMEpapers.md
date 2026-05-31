@@ -1,1 +1,1 @@
-Some papers + spec and ionternal documents
+Some papers + spec and other documents
