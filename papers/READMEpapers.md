@@ -1,1 +1,1 @@
-Some useful references
+Some papers + spec and ionternal documents
