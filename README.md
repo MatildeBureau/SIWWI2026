@@ -1,5 +1,5 @@
 # SIWWI2026
-Scripts used for wave/ice data post-processing -- SIWWI facility -- University of Melbourne 2026
+Scripts (Matlab) used for wave/ice data post-processing -- SIWWI facility -- University of Melbourne 2026
 
 
 Don't hesitate to reach out for any question : matildebureau@gmail.com 
@@ -31,6 +31,11 @@ sample raw datas from 6 acoustic sensors + two side-cameras obtained during open
 
 ## papers:
 Some useful references + documentation and specs.
+
+## post_processing_wave_ice_tests:
+Main scripts to process SIWWI wave/ice tests: extract ice (or water) surface elevation vs time from acoustic sensors and side cameras, image + raw sensors' signals preprocessing, and then various results can be extracted, saved, and plotted (temporal mean amplitude, attenuation...).
+
+
 
 
 
