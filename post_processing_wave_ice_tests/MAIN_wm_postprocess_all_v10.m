@@ -72,7 +72,7 @@ clear; clc; close all;
 %  1a. SAVING FLAGS
 % ---------------------------------------------------------
 save_fig     = true;   % export all open figures to PNG + PDF?
-save_results = true;   % write results and attenuation CSVs?
+save_results = false;   % write results and attenuation CSVs?
 
 % ---------------------------------------------------------
 %  1b. FALLBACK SAMPLING FREQUENCY
@@ -110,7 +110,7 @@ freqTol = 0.10;   % [Hz]
 %  1f. DATE STRING FOR OUTPUT FOLDER
 %  Format: DDMMYY — used in the output directory name.
 % ---------------------------------------------------------
-date_str = '060526';
+date_str = '280426';
 
 % ---------------------------------------------------------
 %  1g. DESPIKING — ACOUSTIC SENSORS
@@ -245,7 +245,7 @@ drift_snr_thresh = 20;   % [-]
 %    Section 2f prompts for the benchmark CSV produced in Pass 1.
 %    Amplitudes are normalised as a / a0 before plotting.
 % ---------------------------------------------------------
-benchmark_mode = false;   % set true to skip normalisation (benchmark run)
+benchmark_mode = true;   % set true to skip normalisation (benchmark run)
 
 % Apply plain-text rendering globally so underscores in filenames
 % do not trigger LaTeX subscript interpretation in titles/labels.
@@ -1674,102 +1674,147 @@ freqColorMap = lines(max(length(uniqueFreqs), 1));
 getFreqColor = @(f) freqColorMap(find(uniqueFreqs == f, 1), :);
 
 
+
+
+
 %% =========================================================
 %  PLOT 2: AMPLITUDE vs SENSOR/CAMERA POSITION
 %
-%  One figure per set voltage (uniqueAmps).
-%  Acoustic measurements: coloured circles by mode with x-error bars
-%  (delta_x_m) and y-error bars (res_UncAmp_plot).
-%  Camera measurements: green crosses with y-error bars.
-%
+%  All set voltages on a single figure, coloured by set voltage
+%  using a perceptually progressive colormap (cool→warm).
+%  Acoustic measurements: filled circles (●).
+%  Camera measurements:   upward triangles (▲).
 %  Optional: filter to a single set frequency (target_f).
 %  Optional: exclude Sensor 5 (skipSensor5).
 % =========================================================
-target_f      = false;      % set to a frequency [Hz] to plot one frequency only
-freq_tol_plot = 0.01;       % [Hz] tolerance for floating-point frequency match
-skipSensor5   = false;      % exclude Sensor 5 (x = sensor5_loc) if true
+target_f      = false;
+freq_tol_plot = 0.01;
+skipSensor5   = true;
 
-for ia = 1:length(uniqueAmps)
-    ampSet = uniqueAmps(ia);   % [V]
+% Frequency masks
+if isnumeric(target_f) && isscalar(target_f) && isfinite(target_f)
+    freq_mask_acou = abs(res_InputFreq(idx_acou) - target_f) < freq_tol_plot;
+    freq_mask_cam  = abs(res_InputFreq(idx_cam)  - target_f) < freq_tol_plot;
+    fig_freq_label = sprintf('_f%.3gHz', target_f);
+    ttl_freq_label = sprintf(', $f$ = %.3g Hz', target_f);
+else
+    freq_mask_acou = true(size(idx_acou));
+    freq_mask_cam  = true(size(idx_cam));
+    fig_freq_label = '_allFreq';
+    ttl_freq_label = '';
+end
 
-    % Build frequency masks for acoustic and camera index sets
-    if isnumeric(target_f) && isscalar(target_f) && isfinite(target_f)
-        freq_mask_acou = abs(res_InputFreq(idx_acou) - target_f) < freq_tol_plot;
-        freq_mask_cam  = abs(res_InputFreq(idx_cam)  - target_f) < freq_tol_plot;
-        fig_freq_label = sprintf('_f%.3gHz', target_f);
-        ttl_freq_label = sprintf(', $f$ = %.3g Hz', target_f);
-    else
-        freq_mask_acou = true(size(idx_acou));
-        freq_mask_cam  = true(size(idx_cam));
-        fig_freq_label = '_allFreq';
-        ttl_freq_label = '';
-    end
+if skipSensor5
+    sensor5_loc    = 7.80;
+    fig_freq_label = [fig_freq_label, '_5skipped'];
+end
 
-    % Filter by set voltage and frequency; exclude rows with NaN amplitude
+% Progressive colormap: cool (low V) → warm (high V)
+nAmps       = length(uniqueAmps);
+rawCmap     = turbo(max(nAmps, 1));   % turbo goes blue→green→yellow→red
+getAmpColor = @(ia) rawCmap(ia, :);
+
+
+fAmpFig = figure('Name', sprintf('Amp_vs_Loc_allV%s%s', fig_freq_label, plotNormSuffix));
+
+
+fAmpFig.Position = [100, 100, 700, 400]; 
+
+ax2 = axes(fAmpFig); hold(ax2,'on'); grid(ax2,'on');
+
+%axis(ax2, 'square');
+pbaspect(ax2, [1 1 1]);
+
+
+% Legend handle arrays: one patch per voltage (colour), two lines for type
+hVoltage = gobjects(nAmps, 1);   % colour legend entries
+hAcou    = gobjects(1);          % marker legend: acoustic
+hCam     = gobjects(1);          % marker legend: camera
+
+acouPlotted = false;
+camPlotted  = false;
+
+for ia = 1:nAmps
+    ampSet = uniqueAmps(ia);
+    cColor = getAmpColor(ia);
+    
     idxA = idx_acou(abs(res_InputAmp(idx_acou) - ampSet) < 1e-6 & ...
                     freq_mask_acou & ...
                     ~isnan(res_MeanAmp_plot(idx_acou)));
     idxC = idx_cam( abs(res_InputAmp(idx_cam)  - ampSet) < 1e-6 & ...
                     freq_mask_cam  & ...
                     ~isnan(res_MeanAmp_plot(idx_cam)));
-
-    % Optionally exclude Sensor 5
+                    
     if skipSensor5
-        sensor5_loc          = 7.80;   % [m] x-position of Sensor 5
-        idxA                 = idxA(abs(res_SensorLoc(idxA) - sensor5_loc) > 1e-6);
-        idxC                 = idxC(abs(res_SensorLoc(idxC) - sensor5_loc) > 1e-6);
-        fig_freq_label_plot2 = [fig_freq_label, '_5skipped'];
-    else
-        fig_freq_label_plot2 = fig_freq_label;
+        idxA = idxA(abs(res_SensorLoc(idxA) - sensor5_loc) > 1e-6);
+        idxC = idxC(abs(res_SensorLoc(idxC) - sensor5_loc) > 1e-6);
     end
-
+    
     if isempty(idxA) && isempty(idxC)
-        fprintf('  [SKIP Plot2] No data: A=%.3fV%s\n', ampSet, fig_freq_label_plot2);
+        fprintf('  [SKIP Plot2] No data: A=%.3fV%s\n', ampSet, fig_freq_label);
+        hVoltage(ia) = gobjects(1);
         continue
     end
-
-    fAmpFig = figure('Name', ...
-        sprintf('Amp_vs_Loc_A%.3fV%s%s', ampSet, fig_freq_label_plot2, plotNormSuffix));
-    ax2     = axes(fAmpFig); hold(ax2,'on'); grid(ax2,'on');
-    plottedModes2 = strings(0);
-
-    % Acoustic data points with x- and y-error bars
+    
+    % Invisible patch just to get a solid colour swatch in the legend
+    hVoltage(ia) = patch(ax2, NaN, NaN, cColor, 'EdgeColor', cColor, ...
+        'DisplayName', sprintf('$A_{set}$ = %.3f V', ampSet));
+        
+    % Acoustic: filled circles
     for ii = idxA'
-        st   = wm_style_for_mode(res_Mode(ii), modeStyleMap);
-        ms2  = string(res_Mode(ii));
-        hVis = 'off'; dName = '';
-        if ~ismember(ms2, plottedModes2)
-            hVis = 'on'; dName = ms2; plottedModes2(end+1) = ms2;
+        h = errorbar(ax2, res_SensorLoc(ii), res_MeanAmp_plot(ii), ...
+            res_UncAmp_plot(ii), res_UncAmp_plot(ii), delta_x_m, delta_x_m, ...
+            'o', 'Color', cColor, 'MarkerFaceColor', cColor, ...
+            'MarkerSize', 6, 'CapSize', 6, 'LineWidth', 1.2, ...
+            'HandleVisibility', 'off');
+        if ~acouPlotted
+            hAcou = errorbar(ax2, NaN, NaN, NaN, NaN, ...
+                'o', 'Color', [0.3 0.3 0.3], 'MarkerFaceColor', [0.3 0.3 0.3], ...
+                'MarkerSize', 6, 'LineWidth', 1.2, 'CapSize', 6, ...
+                'DisplayName', 'Acoustic');
+            acouPlotted = true;
         end
+    end
+    
+    % Camera: open upward triangles ('^')
+    for ii = idxC'
         errorbar(ax2, res_SensorLoc(ii), res_MeanAmp_plot(ii), ...
             res_UncAmp_plot(ii), res_UncAmp_plot(ii), delta_x_m, delta_x_m, ...
-            st.marker, 'Color', st.color, 'MarkerFaceColor', 'none', ...
-            'MarkerSize', 7, 'CapSize', 8, 'LineWidth', 1.2, ...
-            'DisplayName', dName, 'HandleVisibility', hVis);
+            '^', 'Color', cColor, 'MarkerFaceColor', 'none', ...
+            'MarkerSize', 8, 'CapSize', 6, 'LineWidth', 1.5, ...
+            'HandleVisibility', 'off');
+        if ~camPlotted
+            hCam = errorbar(ax2, NaN, NaN, NaN, NaN, ...
+                '^', 'Color', [0.3 0.3 0.3], 'MarkerFaceColor', 'none', ...
+                'MarkerSize', 8, 'LineWidth', 1.5, 'CapSize', 6, ...
+                'DisplayName', 'Camera');
+            camPlotted = true;
+        end
     end
-
-    % Camera data points
-    if ~isempty(idxC)
-        scatter(ax2, res_SensorLoc(idxC), res_MeanAmp_plot(idxC), ...
-            60, [0.2 0.6 0.2], 'x', 'LineWidth', 1.5, 'DisplayName', 'Camera');
-        errorbar(ax2, res_SensorLoc(idxC), res_MeanAmp_plot(idxC), ...
-            res_UncAmp_plot(idxC), res_UncAmp_plot(idxC), ...
-            'Color', [0.2 0.6 0.2], 'LineStyle', 'none', ...
-            'HandleVisibility', 'off', 'CapSize', 8, 'LineWidth', 1.2);
-    end
-
-    legend(ax2, 'show', 'Location', 'best', 'Interpreter', 'none');
-    xlabel(ax2, '$x$ (m)',   'Interpreter', 'latex', 'FontSize', 11);
-    ylabel(ax2, y_label_amp, 'Interpreter', 'latex', 'FontSize', 11);
-    title(ax2, sprintf('$A_{set}$ = %.3f V%s', ampSet, ttl_freq_label), ...
-        'Interpreter', 'latex', 'FontSize', 11);
-
-    figHandles{end+1}   = fAmpFig;
-    figBaseNames{end+1} = ...
-        sprintf('Plot2_Amp_vs_Loc_A%.3fV%s%s', ampSet, fig_freq_label_plot2, plotNormSuffix);
 end
 
+% Build legend: voltage swatches first, then instrument-type markers
+% Remove any gobjects that were skipped (no data)
+validV = hVoltage(isgraphics(hVoltage));
 
+% Separator: invisible entry to visually split colour vs marker section
+hSep = plot(ax2, NaN, NaN, 'LineStyle', 'none', 'Marker', 'none', ...
+    'DisplayName', '  ');   % blank spacer row
+
+allHandles = [validV; hSep];
+if acouPlotted; allHandles = [allHandles; hAcou]; end
+if camPlotted;  allHandles = [allHandles; hCam];  end
+
+
+lgd = legend(ax2, allHandles, 'Location', 'eastoutside', ...
+    'Interpreter', 'latex', 'FontSize', 9, 'NumColumns', 2);
+
+xlabel(ax2, '$x$ (m)',   'Interpreter', 'latex', 'FontSize', 17);
+ylabel(ax2, y_label_amp, 'Interpreter', 'latex', 'FontSize', 17);
+title(ax2, '');   % no title
+
+figHandles{end+1}   = fAmpFig;
+figBaseNames{end+1} = sprintf('Plot2_Amp_vs_Loc_allV%s%s', fig_freq_label, plotNormSuffix);
 %% =========================================================
 %  PLOT 3: AMPLITUDE CALIBRATION
 %
@@ -2454,7 +2499,7 @@ disp('======================================================');
 if save_fig || save_results
 
     % Output directory on external drive
-    externalDrivePath = 'E:\SIWWI2026\060526\wave_ice_test\';
+    externalDrivePath = 'E:\SIWWI2026\280426\';
     outputDir = fullfile(externalDrivePath, ['results_postprocess_' date_str]);
     if ~exist(outputDir, 'dir'); mkdir(outputDir); end
     fprintf('Output directory: %s\n', outputDir);
