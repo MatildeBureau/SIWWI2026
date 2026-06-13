@@ -50,7 +50,7 @@ Computes the complete set of physical wave characteristics for all combinations 
 
 **Method:**
 
-- **Linear dispersion relation**: Solves $\omega^2 = g k \tanh(kh)$ iteratively using Newton-Raphson, starting from the deep-water approximation $k_0 = \omega^2/g$.
+- **Linear dispersion relation**: Solves $\omega^2 = g k \tanh(kh)$ iteratively using Newton-Raphson, starting from the deep-water approximation $k_0 = \omega^2/g$. Note that this is the open-water dispersion relation, measured wavelengths value will be different in ice. This is just to tune T/f/ak as inputs.
 - **Voltage mapping**: Inverts the linear calibration fit at the chosen reference sensor location:
 
 $$a_{\text{meas}} \, [\text{m}] = \text{Slope} \, [\text{m/V}] \times V_{\text{set}} \, [\text{V}] + \text{Intercept} \, [\text{m}]$$
