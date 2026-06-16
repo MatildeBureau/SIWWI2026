@@ -35,6 +35,9 @@ Some useful references + documentation and specs.
 ## post_processing_wave_ice_tests:
 Main scripts to process SIWWI wave/ice tests: extract ice (or water) surface elevation vs time from acoustic sensors and side cameras, image + raw sensors' signals preprocessing, and then various results can be extracted, saved, and plotted (temporal mean amplitude, attenuation...). 
 
+## wave_classifier:
+Scripts to scatter all SIWWI tests in the Le Méhauté's diagram + return statistics for all relevant dimensional and dimensionless wave/ice parameters for all wave-ice tests + plot fracture threshold vs tested steepnesses and periods.
+
 
 
 
