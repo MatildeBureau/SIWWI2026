@@ -1,72 +1,73 @@
-# Le Méhauté Wave Theory Classifier
-This script classifies experimental wave data into valid wave theories based on the Le Méhauté (1976) diagram. It takes nominal wave parameters and post-processed results, computes the necessary dimensionless variables, classifies each wave condition, and plots them on a reproduced Le Méhauté diagram.
+# SIWWI 2026 — Wave Theory Classification & Breakup Analysis
 
-**Author:** Matilde, May 2026  
-**Project:** SIWWI 2026
+This repository contains two MATLAB scripts for post-processing SIWWI wave-tank experimental data. Together they classify all wave conditions on a Le Méhauté diagram and assess the proximity of each ice-covered test to the wave-induced breakup threshold of Voermans et al. (2020).
 
----
+**Author:** Matilde Bureau, May 2026  
+**Project:** SIWWI 2026  
 
-## Features
-
-- **Frequency Matching:** Uses a fuzzy-matching algorithm (configurable tolerance, default 12%) to map the programmed wavemaker frequency (`SetFrequency_Hz`) to the nominal frequency (`f_Hz`), correctly retrieving the theoretical wavelength for each condition.
-- **Amplitude Matching:** Among all wave-parameter rows passing the frequency match, selects the row whose set amplitude `a_set` is closest to the measured amplitude to correctly resolves all steepnesses (`ka`) per frequency.
-- **Ice Tagging:** Prompts the user via the console to specify whether ice was present for each experimental dataset. Ice and water tests use distinct visual markers on the plot and distinct dispersion relations for wavelength computation (see below).
-- **Wavelength / Wavenumber Computation:**
-  - *Open-water tests:* The wavelength is read directly from the wave-parameters CSV (`lambda_m`), which was pre-computed from the open-water Airy dispersion relation $\omega^2 = gk\tanh(kH)$ at the nominal frequency.
-  - *Ice-covered tests:* The wavelength is solved iteratively (Newton's method, up to 200 iterations, convergence $< 10^{-10}$) from the **flexural-gravity dispersion relation**:
-$$\omega^2 = gk\tanh(kH)\left(1 + \frac{Dk^4}{\rho_w g}\right)$$
-where $D = Eh^3 / [12(1-\nu^2)]$ is the ice flexural rigidity, $H$ is the still-water depth, and $\rho_w$ is water density. The open-water wavelength at the matched frequency is used as the Newton initialisation $k_0$.
-- **Le Méhauté Coordinates:** Computes dimensionless depth $H/(gT^2)$ (x-axis) and dimensionless wave height $2a/(gT^2)$ (y-axis), consistent with the wave-height-based ($2a = H_\text{wave}$) thresholds of Zhao et al. (2024).
-- **Zone Classification:** Categorises each data point by:
-  - *Depth regime:* Shallow ($H/\lambda < 0.05$), Intermediate ($0.05 < H/\lambda < 0.5$), Deep ($H/\lambda > 0.5$).
-  - *Wave theory:* Linear, Stokes 2nd–5th order, Cnoidal ($U_r > 26$), or Breaking. Thresholds are the deep-water $2a/\lambda$ limits from Zhao et al. (2024) Table 1, based on the crest-contribution ratio $R_n \geq 1\%$ criterion of Zhao & Liu (2022). The Ursell number is $U_r = (2a/\lambda)/(H/\lambda)^3$.
-- **Ice-specific Dimensionless Parameters** (computed for ice tests only):
-  - $kH$: dimensionless water depth
-  - $kh$: dimensionless ice thickness
-  - $kL_d$: elasticity parameter, where $L_d = (D/\rho_w g)^{1/4}$ is the flexural length scale
-  - $h/\lambda$: relative ice thickness (thin-plate validity check: $h/\lambda \ll 1$)
-  - $\mathcal{I} = ah E / (\sigma_f \lambda^2)$: Voermans et al. (2020) breakup parameter, with uncertainty $\delta\mathcal{I}/\mathcal{I} = \sqrt{(\delta a/a)^2 + (\delta h/h)^2 + (\delta E/E)^2 + (\delta\sigma_f/\sigma_f)^2}$ propagated in quadrature. Per-row amplitude uncertainty $\delta a$ is read from `UncertaintyAmplitude_m` in the results CSV if present.
-- **Plotting:** Generates a log-log Le Méhauté diagram with:
-  - Breaking limit curve (Fenton 1990, Eq. 7)
-  - Cnoidal/Stokes boundary ($U_r = 26$)
-  - Stokes order boundaries ($2a/\lambda =$ 0.0064, 0.0472, 0.0697 deep-water asymptotes)
-  - $U_r$ iso-lines ($U_r = 1$, $U_r = 20$)
-  - Depth-regime vertical boundaries ($H/\lambda = 0.05$, $H/\lambda = 0.5$)
-  - Scatter points for all experiments, coloured and shaped by dataset and ice presence
-- **Export:** Saves classification results to a `.csv` and the diagram as high-resolution PDF and PNG.
 
 ---
 
-## Inputs
+## Repository Structure
 
-The script takes pairs of `.csv` files for each experiment, specified in `csv_pairs` (Section 2). Ensure your input tables contain the following columns:
+```
+wave_classifier/
+├── wave_classifier.m          # Script 1 — Le Méhauté classification + CSV export
+├── wave_stats_breakup.m       # Script 2 — Statistics + breakup parameter plots
+├── waves_class.csv            # Output of Script 1 — input to Script 2
+├── lemehaute_diagram.pdf/.png # Le Méhauté diagram (output of Script 1)
+└── README.md                  # This file
+```
 
-**1. Wave Parameters CSV (`Waves_param_HIGH_*.csv`):**
+**Workflow:** run Script 1 first to generate `waves_class.csv`, then run Script 2 on that CSV.
+
+---
+
+## Script 1 — `wave_classifier.m`
+
+### Overview
+
+Classifies all SIWWI wave conditions in the Le Méhauté (1976) diagram, updated with quantitative zone boundaries from Zhao, Wang & Liu (2024). For each experimental result row, it:
+
+1. Matches the logged wavemaker frequency to the nominal wave-parameters table (fuzzy frequency match, then closest-amplitude refinement) to retrieve the correct theoretical wavelength and steepness.
+2. Computes the wavelength/wavenumber using the **open-water Airy dispersion relation** for water-only tests, or the **flexural-gravity dispersion relation** (Newton iteration) for ice-covered tests.
+3. Computes Le Méhauté coordinates $H/(gT^2)$ and $2a/(gT^2)$, classifies the depth regime and applicable wave theory, and calculates all relevant dimensionless parameters.
+4. Plots the diagram with all SIWWI data points overlaid and exports the figure and a summary CSV.
+
+### Features
+
+- **Two-step matching:** frequency match within configurable tolerance (default 12%), then closest set amplitude among candidates — correctly recovers all steepnesses per frequency.
+- **Ice vs water dispersion:** open-water tests use pre-computed Airy wavelengths; ice tests solve the flexural-gravity relation iteratively.
+- **Consistent $2a$ convention:** y-axis is $2a/(gT^2)$ (wave height, not amplitude), consistent with the Zhao et al. (2024) Table 1 thresholds which are defined on $H/\lambda = 2a/\lambda$.
+- **Ice-specific parameters:** $kH$, $kh$, $kL_d$, $h/\lambda$, and the Voermans et al. breakup parameter $\mathcal{I}$ with full uncertainty propagation.
+- **Backward-compatible:** gracefully handles missing optional CSV columns (`a_m`, `UncertaintyAmplitude_m`).
+
+### Inputs
+
+Pairs of `.csv` files per experiment, defined in `csv_pairs` at the top of the script:
+
+**Wave Parameters CSV (`Waves_param_HIGH_*.csv`):**
 
 | Column | Description |
 |--------|-------------|
 | `f_Hz` | Nominal wavemaker frequency [Hz] |
 | `T_s` | Nominal wave period [s] |
-| `lambda_m` | Theoretical open-water wavelength [m] (pre-computed from Airy dispersion relation) |
+| `lambda_m` | Open-water wavelength from Airy dispersion relation [m] |
 | `ka` | Set wave steepness $ka$ [-] |
-| `a_m` | Set wave amplitude [m] (used for amplitude matching; reconstructed from `ka` and `lambda_m` if absent) |
+| `a_m` | Set wave amplitude [m] (reconstructed from `ka`/`lambda_m` if absent) |
 
-**2. Results Post-Processing CSV (`Results_postprocess_*.csv`):**
+**Results CSV (`Results_postprocess_*.csv`):**
 
 | Column | Description |
 |--------|-------------|
-| `SetFrequency_Hz` | Programmed wavemaker frequency logged by controller [Hz] |
-| `MeasuredFrequency_FFT_Hz` | Measured dominant frequency from FFT of acoustic signal [Hz] |
-| `MeasuredAmplitude_m` | Measured wave amplitude $a$ [m] (script uses $2a$ as wave height for diagram) |
-| `UncertaintyAmplitude_m` | *(optional)* Per-row amplitude uncertainty [m], used in $\mathcal{I}$ uncertainty propagation |
+| `SetFrequency_Hz` | Programmed frequency logged by wavemaker controller [Hz] |
+| `MeasuredFrequency_FFT_Hz` | Frequency measured by FFT of acoustic signal [Hz] |
+| `MeasuredAmplitude_m` | Measured wave amplitude $a$ [m] |
+| `UncertaintyAmplitude_m` | *(optional)* Per-row amplitude uncertainty [m] |
 
----
+### Outputs
 
-## Outputs
-
-### CSV (`waves_class.csv`)
-
-One row per valid data point, with the following columns:
+**`waves_class.csv`** — one row per valid data point:
 
 | Column | Description |
 |--------|-------------|
@@ -76,33 +77,78 @@ One row per valid data point, with the following columns:
 | `T_set` | Set (nominal) period $1/f_\text{set}$ [s] |
 | `a_m` | Measured amplitude [m] |
 | `H_wave_m` | Wave height $2a$ [m] |
-| `H_over_gT2` | Dimensionless depth $H/(gT^2)$ — x-axis coordinate |
-| `twoa_over_gT2` | Dimensionless wave height $2a/(gT^2)$ — y-axis coordinate |
+| `H_over_gT2` | Dimensionless depth $H/(gT^2)$ — x-axis |
+| `twoa_over_gT2` | Dimensionless wave height $2a/(gT^2)$ — y-axis |
 | `H_over_lambda` | Relative water depth $H/\lambda$ [-] |
-| `a_over_lambda` | Wave amplitude steepness $a/\lambda$ [-] |
+| `a_over_lambda` | Amplitude steepness $a/\lambda$ [-] |
 | `Ursell_Ur` | Ursell number $U_r = (2a/\lambda)/(H/\lambda)^3$ [-] |
-| `Depth_Zone` | Depth regime: `Shallow`, `Intermediate`, or `Deep` |
-| `Theory_Zone` | Wave theory: `Linear`, `Stokes-2nd`, ..., `Stokes-5th`, `Cnoidal`, or `BREAKING` |
-| `lambda_m` | Wavelength used [m] (open-water or flexural-gravity, depending on ice flag) |
+| `Depth_Zone` | `Shallow`, `Intermediate`, or `Deep` |
+| `Theory_Zone` | `Linear`, `Stokes-2nd` … `Stokes-5th`, `Cnoidal`, or `BREAKING` |
+| `lambda_m` | Wavelength [m] (Airy or flexural-gravity) |
 | `k_rad_m` | Wavenumber [rad/m] |
 | `kH` | Dimensionless water depth $kH$ [-] |
-| `kh` | Dimensionless ice thickness $kh$ [-] (NaN for water tests) |
-| `kLd` | Elasticity parameter $kL_d$ [-] (NaN for water tests) |
-| `I_breakup` | Breakup parameter $\mathcal{I}$ [-] (NaN for water tests) |
-| `dI_breakup` | Uncertainty on $\mathcal{I}$ [-] (NaN for water tests) |
-| `h_over_lambda` | Relative ice thickness $h/\lambda$ [-] (NaN for water tests) |
-| `H_over_lambda_water` | Relative water depth $H/\lambda$ [-] (alias of `H_over_lambda`) |
-| `ka_set` | Set steepness $ka$ from wave-params match [-] |
+| `kh` | Dimensionless ice thickness $kh$ [-] (NaN: water) |
+| `kLd` | Elasticity parameter $kL_d$ [-] (NaN: water) |
+| `I_breakup` | Breakup parameter $\mathcal{I}$ [-] (NaN: water) |
+| `dI_breakup` | Uncertainty on $\mathcal{I}$ [-] (NaN: water) |
+| `h_over_lambda` | Relative ice thickness $h/\lambda$ [-] (NaN: water) |
+| `H_over_lambda_water` | Alias of `H_over_lambda` [-] |
+| `ka_set` | Matched set steepness $ka$ [-] |
 
-### Figure (`lemehaute_diagram.pdf` / `.png`)
+**`lemehaute_diagram.pdf` / `.png`** — log-log Le Méhauté diagram with all experiments as scatter points (circles: water; diamonds: ice), zone boundaries, Ursell iso-lines, and breaking criterion.
 
-Log-log Le Méhauté diagram with all SIWWI experiments overlaid as scatter points. Water tests: circles. Ice tests: diamonds. 
+---
+
+## Script 2 — `wave_stats_breakup.m`
+
+### Overview
+
+Reads `waves_class.csv` (output of Script 1) and produces two outputs:
+
+1. **Parameter statistics table** — prints min, max, mean and median of all key dimensionless parameters, split by ice vs water, with full context columns ($\lambda$, $T_\text{set}$, $f_\text{set}$, $T_s$, $a$, $ka_\text{set}$) for each statistic.
+2. **Four breakup plots** — shows the normalised breakup parameter $\mathcal{I}/\mathcal{I}_{br}$ (Voermans et al. 2020, threshold $\mathcal{I}_{br} = 0.014$) with propagated uncertainty error bars, as a function of steepness and period.
+
+### Statistics
+
+Reports min/max/mean/median (with context) for: $k$, $\lambda$, $H/\lambda$, $a/\lambda$, $kH$, $kh$ (ice only), $kL_d$ (ice only), $h/\lambda$ (ice only), $\mathcal{I}$ (ice only). Artefact rows ($a \approx 0$) are removed before any computation.
+
+### Breakup Plots
+
+The breakup parameter is $\mathcal{I} = ahE/(\sigma_f \lambda^2)$ and is normalised by the empirical threshold $\mathcal{I}_{br} = 0.014$ (Voermans et al. 2020). The dashed red line at $\mathcal{I}/\mathcal{I}_{br} = 1$ marks the predicted breakup onset. Error bars show the quadrature-propagated uncertainty from $\delta a$, $\delta h$, $\delta E$, $\delta\sigma_f$.
+
+Four figures are produced:
+
+| Plot | x-axis | Fixed parameter | Description |
+|------|--------|----------------|-------------|
+| 1 | $ka_\text{set}$ | single $T_\text{set}$ (user-set) | $\mathcal{I}/\mathcal{I}_{br}$ vs steepness at one period |
+| 2 | $T_\text{set}$ [s] | single $ka_\text{set}$ (user-set) | $\mathcal{I}/\mathcal{I}_{br}$ vs period at one steepness |
+| 3 | $ka_\text{set}$ | all $T_\text{set}$ (colour-coded) | Overview: all periods on one steepness axis |
+| 4 | $T_\text{set}$ [s] | all $ka_\text{set}$ (colour-coded) | Overview: all steepnesses on one period axis |
+
+Plots 1 and 2 use configurable fixed values (`fixed_T_set`, `fixed_ka_set`) and matching tolerances (`tol_T`, `tol_ka`). All four figures are exported as PDF and PNG.
+
+### Inputs
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `csv_path` | `'waves_class.csv'` | Path to output CSV from Script 1 |
+| `I_br_threshold` | `0.014` | Voermans et al. breakup threshold |
+| `fixed_T_set` | `0.6` s | Fixed period for Plot 1 |
+| `fixed_ka_set` | `0.1` | Fixed steepness for Plot 2 |
+| `tol_T` | `0.01` s | Matching tolerance on $T_\text{set}$ |
+| `tol_ka` | `0.005` | Matching tolerance on $ka_\text{set}$ |
+| `save_fig` | `true` | Save figures to `save_path` |
+| `save_path` | *(set in script)* | Output directory for figures |
+
+### Backward Compatibility
+
+If `waves_class.csv` was generated by an older version of Script 1 (missing `T_set` or `dI_breakup` columns), Script 2 prints a warning and falls back gracefully: `T_set` is replaced by `T_s` (fixed-$T$ filtering will be approximate) and error bars are suppressed.
 
 ---
 
 ## Physical Parameters
 
-Ice and water parameters are set in the script header (Section — Physical Constants). I have used:
+Values I have used in both scripts (set at the top of each):
 
 | Parameter | Symbol | Value | Unit |
 |-----------|--------|-------|------|
@@ -114,20 +160,20 @@ Ice and water parameters are set in the script header (Section — Physical Cons
 | Ice density | $\rho_i$ | 895 | kg/m³ |
 | Water density | $\rho_w$ | 1000 | kg/m³ |
 | Flexural strength | $\sigma_f$ | 1985 × 10³ | Pa |
-| Uncertainty on $E$ | $\delta E$ | 1.7 × 10⁹ | Pa |
-| Uncertainty on $h$ | $\delta h$ | 0.003 | m |
-| Uncertainty on $\sigma_f$ | $\delta\sigma_f$ | 1168 × 10³ | Pa |
+| $\delta E$ | — | 1.7 × 10⁹ | Pa |
+| $\delta h$ | — | 0.003 | m |
+| $\delta\sigma_f$ | — | 1168 × 10³ | Pa |
 
 Derived:
-- Flexural rigidity: $D = Eh^3 / [12(1-\nu^2)] \approx 1.96 \times 10^{-2}$ N·m
-- Flexural length: $L_d = (D/\rho_w g)^{1/4} \approx 0.376$ m
+- $D = Eh^3/[12(1-\nu^2)] \approx 1.96 \times 10^{-2}$ N·m
+- $L_d = (D/\rho_w g)^{1/4} \approx 0.376$ m
 
 ---
 
 ## References
 
-- Le Méhauté, B. (1976). *An Introduction to Hydrodynamics and Water Waves*. Springer, Berlin, Heidelberg.
-- Zhao, K. & Liu, P.L.-F. (2022). On Stokes wave solutions. *Proceedings of the Royal Society A*, 478, 20210732.
-- Zhao, K., Wang, Y. & Liu, P.L.-F. (2024). A guide for selecting periodic water wave theories — Le Méhauté (1976)'s graph revisited. *Coastal Engineering*, 188, 104432.
+- Le Méhauté, B. (1976). *An Introduction to Hydrodynamics and Water Waves*. Springer.
+- Zhao, K. & Liu, P.L.-F. (2022). On Stokes wave solutions. *Proc. R. Soc. A*, 478, 20210732.
+- Zhao, K., Wang, Y. & Liu, P.L.-F. (2024). A guide for selecting periodic water wave theories. *Coastal Engineering*, 188, 104432.
 - Fenton, J.D. (1990). Nonlinear wave theories. *The Sea — Ocean Engineering Science*, 9, 3–25.
 - Voermans, J.J. et al. (2020). Experimental evidence for a universal threshold characterizing wave-induced sea ice break-up. *The Cryosphere*, 14, 4265–4278.
