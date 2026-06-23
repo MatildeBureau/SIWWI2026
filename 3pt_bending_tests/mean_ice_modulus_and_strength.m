@@ -12,9 +12,6 @@
 %    2. Opens a graphical file selector for the user to pick the CSVs.
 %    3. Extracts 'E' and 'Sigma' (and uncertainties) from each file.
 %    4. Calculates the mean and standard deviation of the sample sets.
-%    5. Determines the "Retained Uncertainty" by comparing the 
-%       statistical scatter (stdv) against the maximum experimental
-%       uncertainty (max dE / max dSigma) across the files.
 %
 %  OUTPUTS:
 %    Prints Mean, Stdv, Max uncertainty, and the final retained uncertainty 
@@ -98,13 +95,13 @@ end
 mean_E = mean(E_list);
 stdv_E = std(E_list);
 max_dE = max(dE_list);
-retained_uncertainty_E = max(stdv_E, max_dE);
+retained_uncertainty_E = stdv_E;
 
 % --- Flexural Strength (Sigma) ---
 mean_Sigma = mean(Sigma_list);
 stdv_Sigma = std(Sigma_list);
 max_dSigma = max(dSigma_list);
-retained_uncertainty_Sigma = max(stdv_Sigma, max_dSigma);
+retained_uncertainty_Sigma = stdv_Sigma ;
 
 %% 4. RESULTS
 fprintf('\n==============================================\n');
@@ -115,12 +112,8 @@ fprintf(' Number of samples      : %d\n\n', actualNum);
 fprintf(' --- Young''s Modulus (E) ---\n');
 fprintf(' Mean E                 : %.4f GPa\n', mean_E);
 fprintf(' Stdv E                 : %.4f GPa\n', stdv_E);
-fprintf(' Max dE                 : %.4f GPa\n', max_dE);
-fprintf(' Retained Uncertainty   : %.4f GPa\n\n', retained_uncertainty_E);
 
 fprintf(' --- Flexural Strength (Sigma_f) ---\n');
 fprintf(' Mean Sigma             : %.2f kPa\n', mean_Sigma);
 fprintf(' Stdv Sigma             : %.2f kPa\n', stdv_Sigma);
-fprintf(' Max dSigma             : %.2f kPa\n', max_dSigma);
-fprintf(' Retained Uncertainty   : %.2f kPa\n', retained_uncertainty_Sigma);
 fprintf('==============================================\n\n');
