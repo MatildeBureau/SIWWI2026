@@ -1,6 +1,6 @@
 # Wave-Ice Post-Processing Scripts
 
-> **SIWWI 2026 — wave–ice interaction experiments, LGGE wave tank**
+
 > Side-camera surface extraction and acoustic + camera post-processing.
 
 ---
@@ -38,7 +38,7 @@ wm_parse_filename           wm_lookup_metadata
 wm_find_video               loc_to_key
 ```
 
-`MAIN_wm_postprocess_all_v10.m`:
+`MAIN_wm_postprocess_all_v11.m`:
 ```
 wm_load_location_metadata   wm_load_calibration
 wm_load_pair_metadata_v2    wm_select_files
@@ -104,7 +104,7 @@ The script includes **checkpoint/resume** logic: if interrupted (Ctrl+C or crash
 
 ---
 
-## `MAIN_wm_postprocess_all_v10.m`
+## `MAIN_wm_postprocess_all_v11.m`
 
 ### What it does
 
@@ -136,14 +136,6 @@ Loads acoustic sensor CSVs and camera time-series CSVs, runs a full signal-proce
 ### Camera signal chain
 Time window → NaN removal → optional despiking → FFT → bandpass filter (`vid_bp_frac = 0.9`) → Hilbert envelope amplitude (`A_cam_Env`) + peak-to-trough amplitude (`A_cam_PT`). Both are always stored; `cam_amp_method = 'envelope'` selects which is displayed in plots.
 
-### Attenuation fitting
-Exponential decay `A(x) = A0 * exp(-alpha * x)` linearised as `ln(A) = ln(A0) - alpha*x`, fitted by **weighted least squares** with weights `w_i = (A_i / delta_A_i)^2` via `wm_compute_attenuation_weighted`.
-
-### Ice flexure (Passerotti et al. 2022)
-```
-I = (Hs * h_ice * E_ice) / (2 * sigma_f_ice * L^2)
-```
-where `Hs = 4 * a` [m], and `L = 2*pi/k` is computed from the measured frequency via the dispersion relation `omega^2 = g*k*tanh(k*H)` solved by Newton–Raphson. Breakup predicted when `I >= I_br = 0.014`. Set ice parameters in Section 1p (`h_ice`, `E_ice`, `sigma_f_ice`, etc.).
 
 ### Plots produced
 | Plot | Content |
@@ -153,14 +145,11 @@ where `Hs = 4 * a` [m], and `L = 2*pi/k` is computed from the measured frequency
 | 4 | Frequency check: f_meas vs f_set (should be 1:1) |
 | 5 | η̄ vs V_set at fixed frequency, one series per position |
 | 6 | η̄(x) per frequency, one subplot per voltage |
-| 7 | Attenuation rate α [m⁻¹] vs frequency |  (I didn't use it in the end, given my results...)
-| 8 | α vs V_set | (I didn't use it in the end)
-| 9 | I/I_br vs wave steepness ka | (I didn't use it in the end)
+
 
 ### Outputs (`results_postprocess_<DATE>/`)
 - `Results_postprocess_<DATE>.csv` — one row per measurement, all computed quantities
 - `Calibration_Fits_Per_Location.csv` — OLS slope, intercept, R², RMSE per location (if `skipCalib = false`)
-- `Attenuation_Results.csv` — α, δα, A0, δA0, R² per (V_set, f_set) group
 - All figures as PNG + PDF
 
 ---
