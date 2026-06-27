@@ -3,7 +3,7 @@ Scripts (Matlab) used for wave/ice data post-processing -- SIWWI facility -- Uni
 
 Don't hesitate to reach out for any question : matildebureau@gmail.com 
 
-MN: and yes i've been lazy i've fed Claude with my scripts to get clearly commented files + Readme. I've checked everything
+NB: and yes i've been lazy at the end of my project;  i've fed Claude with my scripts to get clearly commented files + Readme. I've checked everything
 before uploading but it's still AI-written style, I have made zero effort to change the writing...
 
 Folders general description:
