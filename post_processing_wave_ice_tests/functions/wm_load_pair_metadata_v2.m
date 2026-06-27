@@ -40,6 +40,7 @@ function pairMeta = wm_load_pair_metadata_v2()
     % Numeric test condition columns — default to NaN if absent
     pairMeta.Set_volt_V = get_num(raw, vars, 'Set_volt_V', NaN);
     pairMeta.Set_f_Hz   = get_num(raw, vars, 'Set_f_Hz',   NaN);
+    pairMeta.ka         = get_num(raw, vars, 'ka',         NaN);
 
     % Acquisition mode string
     pairMeta.Mode = get_str(raw, vars, 'Mode', 'HIGH');
