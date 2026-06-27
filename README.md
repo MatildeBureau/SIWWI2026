@@ -1,10 +1,10 @@
 # SIWWI2026
 Scripts (Matlab) used for wave/ice data post-processing -- SIWWI facility -- University of Melbourne 2026
 
-
 Don't hesitate to reach out for any question : matildebureau@gmail.com 
 
-all scripts are Matlab ones.
+MN: and yes i've been lazy i've fed Claude with my scripts to get clearly commented files + Readme. I've checked everything
+before uploading but it's still AI-written style, I have made zero effort to change the writing...
 
 Folders general description:
 
@@ -37,6 +37,11 @@ Main scripts to process SIWWI wave/ice tests: extract ice (or water) surface ele
 
 ## wave_classifier:
 Scripts to scatter all SIWWI tests in the Le Méhauté's diagram + return statistics for all relevant dimensional and dimensionless wave/ice parameters for all wave-ice tests + plot fracture threshold vs tested steepnesses and periods.
+
+
+## ZS: 
+script to try and split incident wave sfrom reflected ones in the tank, based on  Zelt & Skjelbreia (1992). Still too naive atm; need to better tune temporal windowing or completely change method and use wave packets inputs to be able to clearly
+separate reflections.
 
 
 
