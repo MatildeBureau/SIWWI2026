@@ -43,6 +43,15 @@ Scripts to scatter all SIWWI tests in the Le Méhauté's diagram + return statis
 script to try and split incident wave sfrom reflected ones in the tank, based on  Zelt & Skjelbreia (1992). Still too naive atm; need to better tune temporal windowing or completely change method and use wave packets inputs to be able to clearly
 separate reflections.
 
+## temporal_window_analysis:
+
+Analysis of temporal window sensitivity for the amplitude extraction method I used (acoustic sensors only). 
+
+temporal_window_influence_v1.m: loops on all (ak, T) input parameters and, depending on user selection, performs mean 
+amplitude extraction on raw sensors time series just like it's done in MAIN script, but varying the temporal window location or length (s).
+Plots in the end mean amplitude measured along the tank for each parameter sweep + returns statistics (mean, std, (std/mean)*100). This analysis was performed on benchmark tests (20/05) only.
+
+
 
 
 
